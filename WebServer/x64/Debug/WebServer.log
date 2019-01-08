@@ -1,0 +1,10 @@
+﻿  main.cpp
+  TCPListener.cpp
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(15): warning C4244: '=': conversion from 'SOCKET' to 'int', possible loss of data
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(57): warning C4244: 'initializing': conversion from 'SOCKET' to 'int', possible loss of data
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(63): warning C4244: 'initializing': conversion from 'SOCKET' to 'int', possible loss of data
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(103): warning C4244: 'initializing': conversion from 'SOCKET' to 'int', possible loss of data
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(134): warning C4018: '<': signed/unsigned mismatch
+c:\users\giancarlo\source\repos\webserver\webserver\tcplistener.cpp(136): warning C4244: 'initializing': conversion from 'SOCKET' to 'int', possible loss of data
+  Generating Code...
+  WebServer.vcxproj -> C:\Users\Giancarlo\source\repos\WebServer\x64\Debug\WebServer.exe
