@@ -14,10 +14,10 @@ public:
 	TCPListener(const char* ipAddr, int port) : ipAddress(ipAddr), port(port) {}
 
 	// Initialize the listening server
-	int Init();
+	virtual int Init();
 
 	// Run the server
-	int Run();
+	virtual int Run();
 
 protected:
 
@@ -31,15 +31,15 @@ protected:
 	virtual void onMessageReceived(int clientSocket, const char* msg, int length);
 
 	// Message a specific client
-	void sendMessageToClient(int clientSocket, const char* msg, int length);
+	virtual void sendMessageToClient(int clientSocket, const char* msg, int length);
 
 	// Broadcast message from one client to all others
-	void broadcastToClients(int sender, const char* msg, int length);
-
-private:
+	virtual void broadcastToClients(int sender, const char* msg, int length);
 
 	const char* ipAddress;			// IP Address of the server
 	int			port;				// Port Nr. for the web server
 	int			socket;				// Listening socket
+
+private:
 	fd_set		master;				// Master file desc.
 };
