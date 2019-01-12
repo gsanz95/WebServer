@@ -45,9 +45,9 @@ int Threaded_TCPListener::Run()
 	threads.reserve(clients.size());
 
 	// Recv from client sockets
-	for (int sock : this->clients)
+	for (int i=0; i < this->clients.size(); ++i)
 	{
-		threads.emplace_back(std::thread(&Threaded_TCPListener::receiveFromSocket, this, sock));
+		threads.emplace_back(std::thread(&Threaded_TCPListener::receiveFromSocket, this, socket));
 	}
 
 	// Wait for all threads to finish
@@ -81,9 +81,6 @@ Threaded_TCPListener::~Threaded_TCPListener()
 void Threaded_TCPListener::onClientConnected(int clientSocket)
 {
 	std::cout << "New Client Connected!\n";
-
-	// Create another thread to accept more clients
-	this->createAcceptThread();
 }
 
 void Threaded_TCPListener::onClientDisconnected(int clientSocket)
@@ -138,30 +135,6 @@ void Threaded_TCPListener::createAcceptThread()
 	return;
 }
 
-void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
-{
-	// Byte storage
-	char buff[MAX_BUFF_SIZE];
-
-	// Clear buff
-	memset(buff, 0, sizeof(buff));
-
-	// Receive msg
-	int bytesRecvd = recv(receivingSocket, buff, MAX_BUFF_SIZE, 0);
-	if(bytesRecvd <= 0)
-	{
-		// Close client
-		this->clients.erase(receivingSocket);
-		closesocket(receivingSocket);
-
-		onClientDisconnected(receivingSocket);
-	}
-	else
-	{
-		onMessageReceived(receivingSocket, buff, bytesRecvd);
-	}
-}
-
 void Threaded_TCPListener::acceptClient()
 {
 	int client = accept(this->socket, nullptr, nullptr);
@@ -188,7 +161,38 @@ void Threaded_TCPListener::acceptClient()
 
 		// Client Connect Confirmation
 		onClientConnected(client);
+
+		// Create another thread to accept more clients
+		this->createAcceptThread();
 	}
 
 	return;
+}
+
+void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
+{
+	// Byte storage
+	char buff[MAX_BUFF_SIZE];
+
+	// Clear buff
+	memset(buff, 0, sizeof(buff));
+
+	// Receive msg
+	int bytesRecvd = recv(receivingSocket, buff, MAX_BUFF_SIZE, 0);
+	if(bytesRecvd <= 0)
+	{
+		char err_buff[1024];
+		strerror_s(err_buff, bytesRecvd);
+
+		std::cerr << err_buff;
+		// Close client
+		this->clients.erase(receivingSocket);
+		closesocket(receivingSocket);
+
+		onClientDisconnected(receivingSocket);
+	}
+	else
+	{
+		onMessageReceived(receivingSocket, buff, bytesRecvd);
+	}
 }

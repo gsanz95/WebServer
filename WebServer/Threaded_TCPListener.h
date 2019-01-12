@@ -40,9 +40,9 @@ private:
 
 	void createAcceptThread();
 
-	void receiveFromSocket(int receivingSocket);
-
 	void acceptClient();
+
+	void receiveFromSocket(int receivingSocket);
 
 	std::thread listeningThread;
 	std::unordered_set<int> clients;
