@@ -11,7 +11,7 @@ int Threaded_TCPListener::Init()
 		return winSock;
 
 	// Creating listening socket
-	this->socket = ::socket(AF_INET, SOCK_STREAM, 0);
+	this->socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if(this->socket == INVALID_SOCKET)
 		return WSAGetLastError();
@@ -30,6 +30,15 @@ int Threaded_TCPListener::Init()
 	if(listen(this->socket, SOMAXCONN) == SOCKET_ERROR)
 		return WSAGetLastError();
 
+	// Start Listening on new thread
+	using namespace  std::chrono_literals;
+
+	std::packaged_task<void()> listener(std::thread(&Threaded_TCPListener::listenForClients);
+
+	this->listeningFuture = listener.get_future();
+
+	std::thread t(std::move(listener),this);
+
 	return 0;
 }
 
@@ -37,12 +46,25 @@ int Threaded_TCPListener::Run()
 {
 	bool isRunning = true;
 
+	{
+		using namespace std::chrono_literals;
+
+		std::future_status ready = this->listeningFuture.wait_for(0ms);
+
+		if(ready == std::future_status::ready)
+		{
+			// New listening thread if last one used
+			std::packaged_task<void()> listener(std::thread(&Threaded_TCPListener::listenForClients);
+
+			this->listeningFuture = listener.get_future();
+
+			std::thread(std::move(listener), this);
+		}
+	}
+
 	// Read from all clients
 	std::vector<std::thread> threads;
-	threads.reserve(clients.size()+1);
-
-	// Start Listening
-	threads.emplace_back(std::thread(&Threaded_TCPListener::listenForClients, this));
+	threads.reserve(clients.size());
 
 	// Recv from client sockets
 	for (int sock : this->clients)
@@ -56,17 +78,14 @@ int Threaded_TCPListener::Run()
 		t.join();
 	}
 
-	// Remove listener socket and close it.
-	closesocket(this->socket);
-
-	// Clear WinSock
-	WSACleanup();
-
 	return 0;
 }
 
 Threaded_TCPListener::~Threaded_TCPListener()
 {
+	// Remove listener socket and close it.
+	closesocket(this->socket);
+
 	// Remove all client sockets and close them
 	while(!this->clients.empty())
 	{
@@ -76,16 +95,19 @@ Threaded_TCPListener::~Threaded_TCPListener()
 		this->clients.erase(*it);
 		closesocket(socketToClose);
 	}
+
+	// Clear WinSock
+	WSACleanup();
 }
 
 void Threaded_TCPListener::onClientConnected(int clientSocket)
 {
-
+	std::cout << "New Client Connected!\n";
 }
 
 void Threaded_TCPListener::onClientDisconnected(int clientSocket)
 {
-
+	std::cout << "Client Disconnected!\n";
 }
 
 void Threaded_TCPListener::onMessageReceived(int clientSocket, const char* msg, int length)
