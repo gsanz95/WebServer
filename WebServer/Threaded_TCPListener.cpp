@@ -30,14 +30,8 @@ int Threaded_TCPListener::Init()
 	if(listen(this->socket, SOMAXCONN) == SOCKET_ERROR)
 		return WSAGetLastError();
 
-	// Start Listening on new thread
-	using namespace  std::chrono_literals;
-
-	std::packaged_task<void()> listener(std::thread(&Threaded_TCPListener::listenForClients);
-
-	this->listeningFuture = listener.get_future();
-
-	std::thread t(std::move(listener),this);
+	// Accept first client
+	this->createAcceptThread();
 
 	return 0;
 }
@@ -45,22 +39,6 @@ int Threaded_TCPListener::Init()
 int Threaded_TCPListener::Run()
 {
 	bool isRunning = true;
-
-	{
-		using namespace std::chrono_literals;
-
-		std::future_status ready = this->listeningFuture.wait_for(0ms);
-
-		if(ready == std::future_status::ready)
-		{
-			// New listening thread if last one used
-			std::packaged_task<void()> listener(std::thread(&Threaded_TCPListener::listenForClients);
-
-			this->listeningFuture = listener.get_future();
-
-			std::thread(std::move(listener), this);
-		}
-	}
 
 	// Read from all clients
 	std::vector<std::thread> threads;
@@ -75,7 +53,7 @@ int Threaded_TCPListener::Run()
 	// Wait for all threads to finish
 	for(std::thread& t : threads)
 	{
-		t.join();
+		t.detach();
 	}
 
 	return 0;
@@ -103,6 +81,9 @@ Threaded_TCPListener::~Threaded_TCPListener()
 void Threaded_TCPListener::onClientConnected(int clientSocket)
 {
 	std::cout << "New Client Connected!\n";
+
+	// Create another thread to accept more clients
+	this->createAcceptThread();
 }
 
 void Threaded_TCPListener::onClientDisconnected(int clientSocket)
@@ -113,6 +94,10 @@ void Threaded_TCPListener::onClientDisconnected(int clientSocket)
 void Threaded_TCPListener::onMessageReceived(int clientSocket, const char* msg, int length)
 {
 	Threaded_TCPListener::broadcastToClients(clientSocket, msg, length);
+
+	std::thread t(&Threaded_TCPListener::receiveFromSocket, this, clientSocket);
+
+	t.detach();
 
 	return;
 }
@@ -143,6 +128,16 @@ void Threaded_TCPListener::broadcastToClients(int senderSocket, const char * msg
 	return;
 }
 
+void Threaded_TCPListener::createAcceptThread()
+{
+	// Start accepting clients on a new thread
+	this->listeningThread = std::thread(&Threaded_TCPListener::acceptClient, this);
+
+	this->listeningThread.detach();
+
+	return;
+}
+
 void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
 {
 	// Byte storage
@@ -167,11 +162,11 @@ void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
 	}
 }
 
-void Threaded_TCPListener::listenForClients()
+void Threaded_TCPListener::acceptClient()
 {
 	int client = accept(this->socket, nullptr, nullptr);
 
-	// Accept Error
+	// Error
 	if(client == INVALID_SOCKET)
 	{
 		std::printf("Accept Err: %d\n", WSAGetLastError());
@@ -179,6 +174,15 @@ void Threaded_TCPListener::listenForClients()
 	// Add client to clients queue
 	else
 	{
+		/*
+		//Enabling non-blocking
+		u_long iMode = 1;
+		int result = ioctlsocket(client, FIONBIO, &iMode);
+		if(result != NO_ERROR)
+			std::cerr << "ioctlsocket exit with err: " << result << std::endl;
+		else
+		{}
+		*/
 		// Add client to queue
 		this->clients.emplace(client);
 

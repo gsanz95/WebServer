@@ -1,6 +1,2 @@
-﻿  main.cpp
-  TCPListener.cpp
-c:\users\giancarlo\source\repos\gsanz95\webserver\webserver\tcplistener.cpp(134): warning C4018: '<': signed/unsigned mismatch
-  Threaded_TCPListener.cpp
-  Generating Code...
-  WebServer.vcxproj -> C:\Users\Giancarlo\source\repos\gsanz95\WebServer\WebServer\Debug\WebServer.exe
+﻿  Threaded_TCPListener.cpp
+  WebServer.vcxproj -> C:\Users\Giancarlo\Source\Repos\gsanz95\WebServer\WebServer\Debug\WebServer.exe

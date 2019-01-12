@@ -38,10 +38,12 @@ protected:
 
 private:
 
+	void createAcceptThread();
+
 	void receiveFromSocket(int receivingSocket);
 
-	void listenForClients();
+	void acceptClient();
 
-	std::future<void> listeningFuture;
+	std::thread listeningThread;
 	std::unordered_set<int> clients;
 };
