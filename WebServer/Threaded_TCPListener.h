@@ -6,6 +6,7 @@
 #include <thread>
 #include "TCPListener.h"
 #include <vector>
+#include <unordered_set>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -41,5 +42,6 @@ private:
 	void listenForClients();
 
 	// TO-DO: Change to unordered_set<int>
-	std::vector<int> clients;
+	//std::vector<int> clients;
+	std::unordered_set<int> clients;
 };

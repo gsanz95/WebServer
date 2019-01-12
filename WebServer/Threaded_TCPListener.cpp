@@ -42,12 +42,12 @@ int Threaded_TCPListener::Run()
 	threads.reserve(clients.size()+1);
 
 	// Start Listening
-	threads.emplace_back(std::thread(&Threaded_TCPListener::listenForClients));
+	threads.emplace_back(std::thread(&Threaded_TCPListener::listenForClients, this));
 
-	// Check all client sockets
+	// Recv from client sockets
 	for (int sock : this->clients)
 	{
-		threads.emplace_back(std::thread(&Threaded_TCPListener::receiveFromSocket, sock));
+		threads.emplace_back(std::thread(&Threaded_TCPListener::receiveFromSocket, this, sock));
 	}
 
 	// Wait for all threads to finish
@@ -70,8 +70,10 @@ Threaded_TCPListener::~Threaded_TCPListener()
 	// Remove all client sockets and close them
 	while(!this->clients.empty())
 	{
-		int socketToClose = this->clients.back();
-		this->clients.pop_back();
+		std::unordered_set<int>::iterator it = clients.begin();
+
+		int socketToClose = *it;
+		this->clients.erase(*it);
 		closesocket(socketToClose);
 	}
 }
@@ -109,7 +111,7 @@ void Threaded_TCPListener::broadcastToClients(int senderSocket, const char * msg
 	for (int sendSock : this->clients)
 	{
 		if(sendSock != senderSocket)
-			threads.emplace_back(std::thread(&Threaded_TCPListener::sendMessageToClient,sendSock, msg, length));
+			threads.emplace_back(std::thread(&Threaded_TCPListener::sendMessageToClient, this,sendSock, msg, length));
 	}
 
 	// Wait for all threads to finish
@@ -132,7 +134,9 @@ void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
 	if(bytesRecvd <= 0)
 	{
 		// Close client
+		this->clients.erase(receivingSocket);
 		closesocket(receivingSocket);
+
 		onClientDisconnected(receivingSocket);
 	}
 	else
@@ -154,7 +158,7 @@ void Threaded_TCPListener::listenForClients()
 	else
 	{
 		// Add client to queue
-		this->clients.emplace_back(client);
+		this->clients.emplace(client);
 
 		// Client Connect Confirmation
 		onClientConnected(client);
