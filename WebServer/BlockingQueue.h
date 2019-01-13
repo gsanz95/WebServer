@@ -8,6 +8,8 @@
 #include <mutex>
 #include <queue>
 
+#ifndef BLOCKING_QUEUE_H
+#define BLOCKING_QUEUE_H
 template <typename T>
 class BlockingQueue {
 public:
@@ -117,3 +119,4 @@ size_t BlockingQueue<T>::size()
   std::lock_guard<std::mutex> l(mtx_);
   return q_.size();
 }
+#endif
