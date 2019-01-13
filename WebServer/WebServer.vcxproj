@@ -115,11 +115,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlockingQueue.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TCPListener.cpp" />
     <ClCompile Include="Threaded_TCPListener.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlockingQueue.h" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="TCPListener.h" />
     <ClInclude Include="Threaded_TCPListener.h" />
   </ItemGroup>

@@ -30,9 +30,6 @@ int Threaded_TCPListener::Init()
 	if(listen(this->socket, SOMAXCONN) == SOCKET_ERROR)
 		return WSAGetLastError();
 
-	// Accept first client
-	this->createAcceptThread();
-
 	return 0;
 }
 
@@ -40,21 +37,8 @@ int Threaded_TCPListener::Run()
 {
 	bool isRunning = true;
 
-	// Read from all clients
-	std::vector<std::thread> threads;
-	threads.reserve(clients.size());
-
-	// Recv from client sockets
-	for (int i=0; i < this->clients.size(); ++i)
-	{
-		threads.emplace_back(std::thread(&Threaded_TCPListener::receiveFromSocket, this, socket));
-	}
-
-	// Wait for all threads to finish
-	for(std::thread& t : threads)
-	{
-		t.detach();
-	}
+	// Accept client
+	this->acceptClient();
 
 	return 0;
 }
@@ -64,15 +48,13 @@ Threaded_TCPListener::~Threaded_TCPListener()
 	// Remove listener socket and close it.
 	closesocket(this->socket);
 
-	// Remove all client sockets and close them
-	while(!this->clients.empty())
+	// Close all client sockets
+	for(int i=0; i<this->clients.size(); ++i)
 	{
-		std::unordered_set<int>::iterator it = clients.begin();
-
-		int socketToClose = *it;
-		this->clients.erase(*it);
-		closesocket(socketToClose);
+		closesocket(this->clients[i].socket);
 	}
+
+	this->clients.clear();
 
 	// Clear WinSock
 	WSACleanup();
@@ -92,45 +74,32 @@ void Threaded_TCPListener::onMessageReceived(int clientSocket, const char* msg, 
 {
 	Threaded_TCPListener::broadcastToClients(clientSocket, msg, length);
 
-	std::thread t(&Threaded_TCPListener::receiveFromSocket, this, clientSocket);
-
-	t.detach();
-
 	return;
 }
 
-void Threaded_TCPListener::sendMessageToClient(int clientSocket, const char * msg, int length)
+void Threaded_TCPListener::sendMessageToClient(Client& recipient)
 {
-	send(clientSocket, msg, length, 0);
+	bool isAlive = true;
+
+	// Send message when available
+	while(isAlive)
+	{
+		if(recipient.messages.size() > 0)
+			send(recipient.socket, recipient.messages.front(), strlen(recipient.messages.front()) + 1, 0);
+	}
 
 	return;
 }
 
 void Threaded_TCPListener::broadcastToClients(int senderSocket, const char * msg, int length)
 {
-	std::vector<std::thread> threads;
-	threads.reserve(clients.size());
-
 	// Iterate over all clients
-	for (int sendSock : this->clients)
+	for (int i=0; i<this->clients.size(); ++i)
 	{
-		if(sendSock != senderSocket)
-			threads.emplace_back(std::thread(&Threaded_TCPListener::sendMessageToClient, this,sendSock, msg, length));
+		// Push into messages to be sent
+		if(this->clients[i].socket != senderSocket)
+			this->clients[i].messages.push(msg);
 	}
-
-	// Wait for all threads to finish
-	for(std::thread& t : threads)
-		t.join();
-
-	return;
-}
-
-void Threaded_TCPListener::createAcceptThread()
-{
-	// Start accepting clients on a new thread
-	this->listeningThread = std::thread(&Threaded_TCPListener::acceptClient, this);
-
-	this->listeningThread.detach();
 
 	return;
 }
@@ -157,42 +126,58 @@ void Threaded_TCPListener::acceptClient()
 		{}
 		*/
 		// Add client to queue
-		this->clients.emplace(client);
+		Client clientToAdd(client);
+		this->clients.emplace_back(clientToAdd);
 
 		// Client Connect Confirmation
 		onClientConnected(client);
 
-		// Create another thread to accept more clients
-		this->createAcceptThread();
+		// Create a threads for client
+		std::thread recvThread(&Threaded_TCPListener::receiveFromClient, this, clientToAdd);
+		std::thread sendThread(&Threaded_TCPListener::sendMessageToClient, this, clientToAdd);
+
+		clientToAdd.recvThread = std::ref(recvThread);
+		clientToAdd.sendThread = std::ref(sendThread);
+
+		// Detach both threads
+		recvThread.detach();
 	}
 
 	return;
 }
 
-void Threaded_TCPListener::receiveFromSocket(int receivingSocket)
+void Threaded_TCPListener::receiveFromClient(Client& client)
 {
-	// Byte storage
-	char buff[MAX_BUFF_SIZE];
+	bool isAlive = true;
 
-	// Clear buff
-	memset(buff, 0, sizeof(buff));
-
-	// Receive msg
-	int bytesRecvd = recv(receivingSocket, buff, MAX_BUFF_SIZE, 0);
-	if(bytesRecvd <= 0)
+	while(true)
 	{
-		char err_buff[1024];
-		strerror_s(err_buff, bytesRecvd);
+		// Byte storage
+		char buff[MAX_BUFF_SIZE];
 
-		std::cerr << err_buff;
-		// Close client
-		this->clients.erase(receivingSocket);
-		closesocket(receivingSocket);
+		// Clear buff
+		memset(buff, 0, sizeof(buff));
 
-		onClientDisconnected(receivingSocket);
+		// Receive msg
+		int bytesRecvd = recv(client.socket, buff, MAX_BUFF_SIZE, 0);
+		if(bytesRecvd <= 0)
+		{
+			isAlive = false;
+			char err_buff[1024];
+			strerror_s(err_buff, bytesRecvd);
+
+			std::cerr << err_buff;
+			// Close client
+			// TO-DO: Erase client class from vector
+			closesocket(client.socket);
+
+			onClientDisconnected(client.socket);
+		}
+		else
+		{
+			onMessageReceived(client.socket, buff, bytesRecvd);
+		}
 	}
-	else
-	{
-		onMessageReceived(receivingSocket, buff, bytesRecvd);
-	}
+
+	return;
 }

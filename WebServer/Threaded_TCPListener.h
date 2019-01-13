@@ -4,10 +4,11 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <vector>
+#include <memory>
+
 #include "TCPListener.h"
-#include <unordered_set>
-#include <future>
-#include <chrono>
+#include "Client.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -32,18 +33,15 @@ protected:
 
 	void onMessageReceived(int clientSocket, const char * msg, int length);
 
-	void sendMessageToClient(int clientSocket, const char* msg, int length);
+	void sendMessageToClient(Client& recipient);
 
 	void broadcastToClients(int senderSocket, const char * msg, int length);
 
 private:
 
-	void createAcceptThread();
-
 	void acceptClient();
 
-	void receiveFromSocket(int receivingSocket);
+	void receiveFromClient(Client& client);
 
-	std::thread listeningThread;
-	std::unordered_set<int> clients;
+	std::vector<Client> clients;
 };
