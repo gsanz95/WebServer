@@ -20,7 +20,8 @@ typedef struct Client
 	~Client();
 
 	int socket;
-	BlockingQueue<const char*> messages;
+	//BlockingQueue<const char*> messages;
+	BlockingQueue<std::string> messages;
 } Client;
 
 class Threaded_TCPListener : TCPListener

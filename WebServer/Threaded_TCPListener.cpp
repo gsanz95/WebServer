@@ -86,7 +86,8 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 	{
 		if(recipient->messages.size() > 0)
 		{
-			send(recipient->socket, recipient->messages.front(), strlen(recipient->messages.front()), 0);
+			//send(recipient->socket, recipient->messages.front(), strlen(recipient->messages.front()), 0);
+			send(recipient->socket, recipient->messages.front().c_str(), strlen(recipient->messages.front().c_str()), 0);
 			std::cout << "Sent: " << recipient->messages.front() << std::endl;
 			recipient->messages.pop();
 		}
@@ -97,13 +98,14 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 
 void Threaded_TCPListener::broadcastToClients(Client *sender, const char * msg, int length)
 {
-	std::cout << "Trying to send:" << msg << std::endl;
+	std::string text(msg);
+	std::cout << "Trying to send:" << text << std::endl;
 	// Iterate over all clients
 	for (int i=0; i<this->clients.size(); ++i)
 	{
 		// Push into messages to be sent
 		if(this->clients[i] != sender)
-			this->clients[i]->messages.push(msg);
+			this->clients[i]->messages.push(text);
 	}
 
 	return;
@@ -188,5 +190,6 @@ void Threaded_TCPListener::receiveFromClient(Client *sender)
 Client::Client(int sock)
 {
 	this->socket = sock;
-	this->messages = BlockingQueue<const char*>();
+	//this->messages = BlockingQueue<const char*>();
+	this->messages = BlockingQueue<std::string>();
 }
