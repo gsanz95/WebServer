@@ -5,9 +5,12 @@
 #include <sstream>
 #include <thread>
 #include <vector>
+#include <unordered_set>
 
 #include "TCPListener.h"
 #include "BlockingQueue.h"
+#include <stack>
+
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -51,10 +54,14 @@ protected:
 
 	void receiveFromClient(Client *sender);
 
+	void removeDisconnectedClients();
+
 private:
 
 	void acceptClient();
 
-	std::vector<Client*> clients;
+	//std::vector<Client*> clients;
+	std::queue<Client*> m_clientsToRemove;
+	std::unordered_set<Client*> m_clients;
 };
 #endif

@@ -48,13 +48,22 @@ Threaded_TCPListener::~Threaded_TCPListener()
 	// Remove listener socket and close it.
 	closesocket(this->socket);
 
-	// Close all client sockets
+	/////////////////////////////////////////////////////////////////
+	/* Close all client sockets
 	for(int i=0; i<this->clients.size(); ++i)
 	{
 		closesocket(this->clients[i]->socket);
+	}*/
+
+	// Close all client sockets
+	for(auto it=m_clients.begin(); it != m_clients.end(); ++it)
+	{
+		Client* c = *it;
+		closesocket(c->socket);
 	}
 
-	this->clients.clear();
+	m_clients.clear();
+	//this->clients.clear();
 
 	// Clear WinSock
 	WSACleanup();
@@ -72,6 +81,8 @@ void Threaded_TCPListener::onClientDisconnected(Client *client)
 
 void Threaded_TCPListener::onMessageReceived(Client *client, const char* msg, int length)
 {
+	Threaded_TCPListener::removeDisconnectedClients();
+
 	Threaded_TCPListener::broadcastToClients(client, msg, length);
 
 	return;
@@ -86,7 +97,6 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 	{
 		if(recipient->messages.size() > 0)
 		{
-			//send(recipient->socket, recipient->messages.front(), strlen(recipient->messages.front()), 0);
 			send(recipient->socket, recipient->messages.front().c_str(), strlen(recipient->messages.front().c_str()), 0);
 			std::cout << "Sent: " << recipient->messages.front() << std::endl;
 			recipient->messages.pop();
@@ -99,13 +109,22 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 void Threaded_TCPListener::broadcastToClients(Client *sender, const char * msg, int length)
 {
 	std::string text(msg);
-	std::cout << "Trying to send:" << text << std::endl;
-	// Iterate over all clients
+
+	////////////////////////////////////////////////////////////////////
+	/* Iterate over all clients
 	for (int i=0; i<this->clients.size(); ++i)
 	{
 		// Push into messages to be sent
 		if(this->clients[i] != sender)
 			this->clients[i]->messages.push(text);
+	}*/
+
+	for(auto it=m_clients.begin(); it != m_clients.end(); ++it)
+	{
+		Client* c = *it;
+		// Push into messages to be sent
+		if (c != sender)
+			c->messages.push(text);
 	}
 
 	return;
@@ -123,18 +142,11 @@ void Threaded_TCPListener::acceptClient()
 	// Add client to clients queue
 	else
 	{
-		/*
-		//Enabling non-blocking
-		u_long iMode = 1;
-		int result = ioctlsocket(client, FIONBIO, &iMode);
-		if(result != NO_ERROR)
-			std::cerr << "ioctlsocket exit with err: " << result << std::endl;
-		else
-		{}
-		*/
 		// Add client to queue
 		Client* clientToAdd = new Client(client);
-		this->clients.emplace_back(clientToAdd);
+		//////////////////////////////////////////////////////////////////////////////
+		//this->clients.emplace_back(clientToAdd);
+		m_clients.emplace(clientToAdd);
 
 		// Client Connect Confirmation
 		onClientConnected(clientToAdd);
@@ -172,9 +184,12 @@ void Threaded_TCPListener::receiveFromClient(Client *sender)
 			strerror_s(err_buff, bytesRecvd);
 
 			std::cerr << err_buff;
+
 			// Close client
-			// TO-DO: Erase client class from vector
 			closesocket(sender->socket);
+
+			// Add to removing queue
+			m_clientsToRemove.push(sender);
 
 			onClientDisconnected(sender);
 		}
@@ -187,9 +202,18 @@ void Threaded_TCPListener::receiveFromClient(Client *sender)
 	return;
 }
 
+void Threaded_TCPListener::removeDisconnectedClients()
+{
+	// Remove clients until the queue is empty
+	while(!m_clientsToRemove.empty())
+	{
+		m_clients.erase(m_clientsToRemove.front());
+		m_clientsToRemove.pop();
+	}
+}
+
 Client::Client(int sock)
 {
 	this->socket = sock;
-	//this->messages = BlockingQueue<const char*>();
 	this->messages = BlockingQueue<std::string>();
 }
