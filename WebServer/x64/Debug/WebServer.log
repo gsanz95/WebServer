@@ -1,4 +1,2 @@
-﻿  Threaded_TCPListener.cpp
-c:\users\gsanz\source\repos\gsanz95\webserver\webserver\threaded_tcplistener.cpp(14): warning C4244: '=': conversion from 'SOCKET' to 'int', possible loss of data
-c:\users\gsanz\source\repos\gsanz95\webserver\webserver\threaded_tcplistener.cpp(150): warning C4244: 'initializing': conversion from 'SOCKET' to 'int', possible loss of data
-  WebServer.vcxproj -> C:\Users\gsanz\source\repos\gsanz95\WebServer\WebServer\x64\Debug\WebServer.exe
+﻿  main.cpp
+  WebServer.vcxproj -> C:\Users\gsanz\Source\Repos\gsanz95\WebServer\WebServer\x64\Debug\WebServer.exe

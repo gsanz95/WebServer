@@ -6,17 +6,16 @@
 #include <thread>
 #include <vector>
 #include <unordered_set>
+#include <queue>
 
 #include "TCPListener.h"
-#include "BlockingQueue.h"
-#include <stack>
-
+#include "Client.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
 #ifndef THREADED_TCP_LISTENER_H
 #define THREADED_TCP_LISTENER_H
-
+/*
 typedef struct Client
 {
 	Client(int sock);
@@ -25,7 +24,7 @@ typedef struct Client
 	int socket;
 	//BlockingQueue<const char*> messages;
 	BlockingQueue<std::string> messages;
-} Client;
+} Client;*/
 
 class Threaded_TCPListener : TCPListener
 {

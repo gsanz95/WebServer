@@ -48,13 +48,6 @@ Threaded_TCPListener::~Threaded_TCPListener()
 	// Remove listener socket and close it.
 	closesocket(this->socket);
 
-	/////////////////////////////////////////////////////////////////
-	/* Close all client sockets
-	for(int i=0; i<this->clients.size(); ++i)
-	{
-		closesocket(this->clients[i]->socket);
-	}*/
-
 	// Close all client sockets
 	for(auto it=m_clients.begin(); it != m_clients.end(); ++it)
 	{
@@ -98,7 +91,6 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 		if(recipient->messages.size() > 0)
 		{
 			send(recipient->socket, recipient->messages.front().c_str(), strlen(recipient->messages.front().c_str()), 0);
-			std::cout << "Sent: " << recipient->messages.front() << std::endl;
 			recipient->messages.pop();
 		}
 	}
@@ -109,15 +101,6 @@ void Threaded_TCPListener::sendToClient(Client *recipient)
 void Threaded_TCPListener::broadcastToClients(Client *sender, const char * msg, int length)
 {
 	std::string text(msg);
-
-	////////////////////////////////////////////////////////////////////
-	/* Iterate over all clients
-	for (int i=0; i<this->clients.size(); ++i)
-	{
-		// Push into messages to be sent
-		if(this->clients[i] != sender)
-			this->clients[i]->messages.push(text);
-	}*/
 
 	for(auto it=m_clients.begin(); it != m_clients.end(); ++it)
 	{
@@ -144,8 +127,6 @@ void Threaded_TCPListener::acceptClient()
 	{
 		// Add client to queue
 		Client* clientToAdd = new Client(client);
-		//////////////////////////////////////////////////////////////////////////////
-		//this->clients.emplace_back(clientToAdd);
 		m_clients.emplace(clientToAdd);
 
 		// Client Connect Confirmation
@@ -183,6 +164,7 @@ void Threaded_TCPListener::receiveFromClient(Client *sender)
 			char err_buff[1024];
 			strerror_s(err_buff, bytesRecvd);
 
+			// Disconnection Error
 			std::cerr << err_buff;
 
 			// Close client
@@ -210,10 +192,4 @@ void Threaded_TCPListener::removeDisconnectedClients()
 		m_clients.erase(m_clientsToRemove.front());
 		m_clientsToRemove.pop();
 	}
-}
-
-Client::Client(int sock)
-{
-	this->socket = sock;
-	this->messages = BlockingQueue<std::string>();
 }

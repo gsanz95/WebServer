@@ -116,13 +116,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BlockingQueue.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TCPListener.cpp" />
+    <ClCompile Include="Test.cpp" />
     <ClCompile Include="Threaded_TCPListener.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BlockingQueue.h" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="TCPListener.h" />
+    <ClInclude Include="Test.h" />
     <ClInclude Include="Threaded_TCPListener.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
